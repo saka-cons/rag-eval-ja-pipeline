@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+.DS_Store
+documents/
+rag_evaluation_master.csv
+vlm_cache/
+vlm_imgcache/
+results/*/rag_evaluation_master.csv
+results/*/vlm_cache/
+results/*/vlm_imgcache/
+*.part

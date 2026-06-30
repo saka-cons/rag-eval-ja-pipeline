@@ -1,0 +1,278 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: advanced-chat
+  name: 知識リトリーバル + チャットボット
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: stvlynn/lmstudio:0.0.2@d581405702d3bee86a245c314a3b209531695a747839822add5ba23cbe626d89
+    version: null
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai_api_compatible:0.0.53@a0dfb462961a03c6a6415d4185043185b01017c64da93cf82a9e5ecaf59f8ed0
+    version: null
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1711528914102-1711528915811
+      source: '1711528914102'
+      sourceHandle: source
+      target: '1711528915811'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1711528915811-1711528917469
+      source: '1711528915811'
+      sourceHandle: source
+      target: '1711528917469'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: 1711528917469-1711528919501
+      source: '1711528917469'
+      sourceHandle: source
+      target: '1711528919501'
+      targetHandle: target
+      type: custom
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Start
+        type: start
+        variables: []
+      height: 73
+      id: '1711528914102'
+      position:
+        x: 79.5
+        y: 2634.5
+      positionAbsolute:
+        x: 79.5
+        y: 2634.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        dataset_ids:
+        - REPLACE_WITH_DIFY_DATASET_ID
+        desc: Allows you to query text content related to user questions from the
+          Knowledge
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: weighted_score
+          reranking_model:
+            model: rerank
+            provider: langgenius/openai_api_compatible/openai_api_compatible
+          score_threshold: null
+          top_k: 10
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: Qwen/Qwen3-Embedding-8B-GGUF
+              embedding_provider_name: stvlynn/lmstudio/lmstudio
+              vector_weight: 0.7
+            weight_type: customized
+        query_attachment_selector: []
+        query_variable_selector:
+        - '1711528914102'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        single_retrieval_config:
+          model:
+            completion_params:
+              frequency_penalty: 0
+              max_tokens: 512
+              presence_penalty: 0
+              temperature: 0
+              top_p: 1
+            mode: chat
+            name: gpt-3.5-turbo
+            provider: openai
+        title: Knowledge Retrieval
+        type: knowledge-retrieval
+      dragging: false
+      height: 150
+      id: '1711528915811'
+      position:
+        x: 357.3783887272019
+        y: 2634.5
+      positionAbsolute:
+        x: 357.3783887272019
+        y: 2634.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1711528915811'
+          - result
+        desc: Invoking large language models to answer questions or process natural
+          language
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 32768
+            presence_penalty: 0
+            temperature: 0.1
+            top_p: 1
+          mode: chat
+          name: qwen/qwen3.6-35b-a3b
+          provider: langgenius/openai_api_compatible/openai_api_compatible
+        prompt_template:
+        - id: 48dbbbce-6ea9-4bd1-b3f7-e7e48de4d138
+          role: system
+          text: 'あなたは企業文書に関する質問に答えるアシスタントです。
+
+            提供されたコンテキスト(本文・表・図から抽出されたテキスト)に基づき、日本語で正確かつ具体的に回答してください。
+
+
+
+            # 回答ルール
+
+            1. コンテキストに根拠がある内容のみ答える。コンテキスト外の知識で補完・推測しない。
+
+            2. ただし、答えが1文で明示されていなくても、コンテキスト内のデータから比較・計算・整理して導ける場合は、放棄せずに導いて答える。
+
+            3. 「最も多い/高い/低い・最大・最小・順位・伸び率・推移」などを問われたら、まず関連する数値を項目ごとにすべて列挙し、それを根拠に結論を述べる。
+
+            4. 数値・単位・年月・固有名詞・記号(◎○△×等)は、コンテキストの記載どおり一字一句正確に引用する。概数への丸めや桁の変更をしない。
+
+            5. 表を読むときは、対象の値が「どの行ラベル × どの列ラベル」のセルかを確認してから読み取る。
+
+            6. 質問に複数の問い・条件が含まれる場合は、そのすべてに漏れなく答える。条件に合致する項目は全件挙げる。
+
+            7. 関連データがコンテキストに全く存在しない場合に限り「提供された文書からは分かりません」と答える。データがあり結論を導けるのに放棄してはならない。
+
+
+
+            <context>
+
+            {{#context#}}
+
+            </context>'
+        reasoning_format: separated
+        selected: true
+        structured_output_enabled: false
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 148
+      id: '1711528917469'
+      position:
+        x: 645.5
+        y: 2634.5
+      positionAbsolute:
+        x: 645.5
+        y: 2634.5
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: '{{#1711528917469.text#}}'
+        desc: ''
+        selected: false
+        title: Answer
+        type: answer
+        variables: []
+      height: 103
+      id: '1711528919501'
+      position:
+        x: 928.5
+        y: 2634.5
+      positionAbsolute:
+        x: 928.5
+        y: 2634.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: -317.19349567530276
+      y: -2718.747955582528
+      zoom: 1.176935203120822
+  rag_pipeline_variables: []
