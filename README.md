@@ -2,7 +2,7 @@
 
 [RAG Eval JA Repro 再現用評価データセット](https://huggingface.co/datasets/SakataConsul/rag-eval-ja-repro)を [Dify + LM Studio で評価するためのパイプライン](https://qiita.com/sakata_ai/items/a45418f3611926826f66)です。
 
-このリポジトリは、[記事](https://zenn.dev/sakata_consul/books/rag-local-repro/viewer/master-csv)で使った評価コードと実行成果物を置くためのものです。再現用評価データセット本体である `rag_evaluation_master.csv` は Hugging Face dataset [SakataConsul/rag-eval-ja-repro](https://huggingface.co/datasets/SakataConsul/rag-eval-ja-repro) 側を正とし、このGitHubリポジトリには同梱しません。
+このリポジトリは、[Zenn Book「日本語RAGベンチマークをローカルで再現する」](https://zenn.dev/sakata_consul/books/rag-local-repro)で使った評価コードと実行成果物を置くためのものです。再現用評価データセット本体である `rag_evaluation_master.csv` は Hugging Face dataset [SakataConsul/rag-eval-ja-repro](https://huggingface.co/datasets/SakataConsul/rag-eval-ja-repro) 側を正とし、このGitHubリポジトリには同梱しません。
 
 ## 含めるもの
 
