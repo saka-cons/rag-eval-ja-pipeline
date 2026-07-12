@@ -10,3 +10,5 @@ results/*/rag_evaluation_master.csv
 results/*/vlm_cache/
 results/*/vlm_imgcache/
 *.part
+results/_snapshots/
+results/*/dify_manifest.json

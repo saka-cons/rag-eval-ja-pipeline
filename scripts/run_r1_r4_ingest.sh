@@ -2,8 +2,8 @@
 # r1-r4 用の Dify ナレッジを作り直す。
 #
 # 生成されるナレッジ:
-#   - RAG-Eval-JA-master-vlm   : r2/r4 用(VLM 図表テキスト化あり)
-#   - RAG-Eval-JA-master-novlm : r1/r3 用(--no-vlm 対照)
+#   - ${DIFY_DATASET_VLM_NAME:-RAG-Eval-JA-master-vlm}     : r2/r4 用(VLM 図表テキスト化あり)
+#   - ${DIFY_DATASET_NOVLM_NAME:-RAG-Eval-JA-master-novlm} : r1/r3 用(--no-vlm 対照)
 #
 # 使い方:
 #   ./scripts/run_r1_r4_ingest.sh all
@@ -42,6 +42,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 cd "${REPO}"
+if [[ -x "${REPO}/.venv/bin/python3" ]]; then
+  export PATH="${REPO}/.venv/bin:${PATH}"
+elif [[ -x "${REPO}/.venv/bin/python" ]]; then
+  export PATH="${REPO}/.venv/bin:${PATH}"
+fi
+
 if [[ -f .env ]]; then
   set -a
   # shellcheck disable=SC1091
@@ -73,6 +79,7 @@ run_ingest() {
   local kind="$1"
   local dataset="$2"
   shift 2
+  local wait_no_vlm=0
 
   echo
   echo "======================================================================"
@@ -89,13 +96,22 @@ run_ingest() {
   if [[ $# -gt 0 ]]; then
     cmd+=("$@")
   fi
+  if [[ "${kind}" == "novlm" ]]; then
+    wait_no_vlm=1
+  fi
 
   DIFY_DATASET_NAME="${dataset}" "${cmd[@]}"
 
-  DIFY_DATASET_NAME="${dataset}" "${PYMUPDF_PYTHON}" "${REPO}/scripts/wait_indexing.py" \
-    --interval "${WAIT_INTERVAL:-10}" \
-    --timeout "${WAIT_TIMEOUT:-3600}" \
+  local wait_cmd=(
+    "${PYMUPDF_PYTHON}" "${REPO}/scripts/wait_indexing.py"
+    --interval "${WAIT_INTERVAL:-10}"
+    --timeout "${WAIT_TIMEOUT:-3600}"
     --max-retry "${WAIT_MAX_RETRY:-2}"
+  )
+  if [[ "${wait_no_vlm}" -eq 1 ]]; then
+    wait_cmd+=(--no-vlm)
+  fi
+  DIFY_DATASET_NAME="${dataset}" "${wait_cmd[@]}"
 
   mkdir -p "${REPO}/results"
   DIFY_DATASET_NAME="${dataset}" "${PYMUPDF_PYTHON}" "${REPO}/scripts/01_upload_documents_vlm.py" \
@@ -104,23 +120,19 @@ run_ingest() {
 
 case "${MODE}" in
   all)
-    run_ingest "vlm" "RAG-Eval-JA-master-vlm"
-    run_ingest "novlm" "RAG-Eval-JA-master-novlm" --no-vlm
+    run_ingest "vlm" "${DIFY_DATASET_VLM_NAME:-RAG-Eval-JA-master-vlm}"
+    run_ingest "novlm" "${DIFY_DATASET_NOVLM_NAME:-RAG-Eval-JA-master-novlm}" --no-vlm
     ;;
   vlm)
-    run_ingest "vlm" "RAG-Eval-JA-master-vlm"
+    run_ingest "vlm" "${DIFY_DATASET_VLM_NAME:-RAG-Eval-JA-master-vlm}"
     ;;
   novlm)
-    run_ingest "novlm" "RAG-Eval-JA-master-novlm" --no-vlm
+    run_ingest "novlm" "${DIFY_DATASET_NOVLM_NAME:-RAG-Eval-JA-master-novlm}" --no-vlm
     ;;
 esac
 
 cat <<'MSG'
 
 取り込み完了。
-次に Dify Studio のチャットボット設定で、実行する run に応じてコンテキストを切り替えてください。
-  r1/r3: RAG-Eval-JA-master-novlm
-  r2/r4: RAG-Eval-JA-master-vlm
-
-その後、scripts/run_r1_r4_chatbot.sh を実行します。
+次に Dify API で r1-r4 用チャットボットを作成/更新し、scripts/run_r1_r4_chatbot.sh を実行します。
 MSG

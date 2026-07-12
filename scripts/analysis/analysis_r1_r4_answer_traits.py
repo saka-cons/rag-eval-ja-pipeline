@@ -22,7 +22,7 @@ from pathlib import Path
 from statistics import mean
 
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = ROOT / "results"
 OUT_DIR = ROOT / "analysis"
 

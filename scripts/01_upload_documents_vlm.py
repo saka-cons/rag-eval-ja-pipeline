@@ -62,13 +62,13 @@ API_KEY = os.environ.get("DIFY_KNOWLEDGE_API_KEY")
 DATASET_NAME = os.environ.get("DIFY_DATASET_NAME", "RAG-Eval-JA-master")
 DOCS_DIR = Path(__file__).resolve().parent.parent / "documents"
 # VLM 抽出結果の Markdown キャッシュ(再実行で VLM を呼び直さない)
-CACHE_DIR = Path(__file__).resolve().parent.parent / "vlm_cache"
+CACHE_DIR = Path(os.environ.get("VLM_CACHE_DIR", Path(__file__).resolve().parent.parent / "vlm_cache"))
 # 画像単位の VLM 応答キャッシュ(内容ハッシュ key)。--refresh で .md を作り直しても
 # 同一画像の VLM 再実行を避ける。VLM は temperature=0/seed 固定で決定論的なので副作用なし。
-IMG_CACHE_DIR = Path(__file__).resolve().parent.parent / "vlm_imgcache"
+IMG_CACHE_DIR = Path(os.environ.get("VLM_IMG_CACHE_DIR", Path(__file__).resolve().parent.parent / "vlm_imgcache"))
 # VLM の実呼び出し(キャッシュミス時)の token usage を追記する CSV。
 # cache hit は API を叩かないため記録されない。
-USAGE_LOG = Path(__file__).resolve().parent.parent / "results" / "vlm_usage.csv"
+USAGE_LOG = Path(os.environ.get("VLM_USAGE_LOG", Path(__file__).resolve().parent.parent / "results" / "vlm_usage.csv"))
 _VLM_TOK = {"calls": 0, "prompt": 0, "completion": 0}
 # 疎通テスト用PDF(本文+棒グラフ+仕様表)。--sample で参照する
 SAMPLE_PDF = Path(__file__).resolve().parent.parent.parent / "pymupdf" / "documents/ 配下の PDF"

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
+import os
 import shutil
 from collections import Counter, defaultdict
 from datetime import datetime
@@ -201,9 +203,8 @@ def write_analysis(run: str, cfg: dict, run_dir: Path, cache_count: int, img_cou
         "## Reproduction Notes",
         "",
         "- `answers.csv` and `judged.csv` are the primary run outputs.",
-        "- The evaluation target is the repository-root `rag_evaluation_master.csv`, obtained from the Hugging Face dataset release.",
-        "- `vlm_cache/` contains the Markdown cache variant used by this run.",
-        "- `vlm_imgcache/` contains image-level VLM responses for VLM runs; no-VLM runs include a README marker.",
+        "- The local run used a copied `rag_evaluation_master.csv`; the public artifact omits it and pins the source dataset commit in the repository README.",
+        "- The local run generated `vlm_cache/` and `vlm_imgcache/`; the public artifact omits both cache directories.",
     ]
     if errors:
         lines.extend(["", "## Answer Errors", "", "| idx | error |", "|---|---|"])
@@ -219,6 +220,8 @@ def main() -> None:
     ap.add_argument("--dataset-name", help="override Dify dataset name written to analysis.md")
     ap.add_argument("--generation-model", help="override generation model written to analysis.md")
     ap.add_argument("--judge-model", help="override judge model written to analysis.md")
+    ap.add_argument("--snapshot-dir", type=Path, help="optional run snapshot directory")
+    ap.add_argument("--dify-manifest", type=Path, help="optional Dify app/dataset manifest JSON")
     args = ap.parse_args()
 
     cfg = dict(RUNS[args.run])
@@ -234,9 +237,35 @@ def main() -> None:
     run_dir = RESULTS / args.run
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    cache_count = copy_selected_cache(ROOT / "vlm_cache", run_dir / "vlm_cache", cfg["mode"])
-    img_count = copy_img_cache(ROOT / "vlm_imgcache", run_dir / "vlm_imgcache", cfg["mode"])
+    master = ROOT / "rag_evaluation_master.csv"
+    if master.exists():
+        shutil.copy2(master, run_dir / "rag_evaluation_master.csv")
+
+    cache_src = Path(os.environ.get("VLM_CACHE_DIR", ROOT / "vlm_cache"))
+    img_cache_src = Path(os.environ.get("VLM_IMG_CACHE_DIR", ROOT / "vlm_imgcache"))
+    cache_count = copy_selected_cache(cache_src, run_dir / "vlm_cache", cfg["mode"])
+    img_count = copy_img_cache(img_cache_src, run_dir / "vlm_imgcache", cfg["mode"])
+    if (RESULTS / "vlm_usage.csv").exists():
+        shutil.copy2(RESULTS / "vlm_usage.csv", run_dir / "vlm_usage.csv")
+    if args.dify_manifest and args.dify_manifest.exists():
+        shutil.copy2(args.dify_manifest, run_dir / "dify_manifest.json")
     write_analysis(args.run, cfg, run_dir, cache_count, img_count)
+    if args.snapshot_dir:
+        dst = args.snapshot_dir / "results" / args.run
+        if dst.exists():
+            shutil.rmtree(dst)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(run_dir, dst)
+        meta = {
+            "run": args.run,
+            "finalized_at": datetime.now().isoformat(timespec="seconds"),
+            "run_dir": str(run_dir),
+            "snapshot_run_dir": str(dst),
+        }
+        (dst / "finalize_manifest.json").write_text(
+            json.dumps(meta, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
     print(f"finalized {run_dir}")
 
 

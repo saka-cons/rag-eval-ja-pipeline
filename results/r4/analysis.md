@@ -1,42 +1,41 @@
 # r4 analysis
 
-- generated_at: 2026-06-28T09:03:18
+- generated_at: 2026-07-12T06:37:28
 - label: r4: VLM + qwen3.6-35b-a3b
 - knowledge_mode: vlm
-- dify_dataset_name: `RAG-Eval-JA-master-vlm`
+- dify_dataset_name: `RAG-JA-20260711-1010-e7d93c1c-vlm`
 - generation_model: `qwen/qwen3.6-35b-a3b`
 - judge_model: `qwen/qwen3.6-35b-a3b`
-- score: **0.853 (256/300)**
+- score: **0.870 (261/300)**
 - answers_rows: 300
 - judged_rows: 300
-- ox_counts: {'X': 44, 'O': 256}
+- ox_counts: {'O': 261, 'X': 39}
 - answer_errors: 0
-- generation_tokens: prompt=2,805,137 / completion=1,668,626
-- judge_tokens: prompt=177,476 / completion=485,936
+- generation_tokens: prompt=2,807,045 / completion=1,636,462
+- judge_tokens: prompt=180,826 / completion=480,916
 - vlm_cache_files: 65
-- vlm_imgcache_files: 1016
+- vlm_imgcache_files: 1032
 
 ## Domain Scores
 
 | domain | score |
 |---|---|
-| finance | 0.767 (46/60) |
-| it | 0.933 (56/60) |
-| manufacturing | 0.817 (49/60) |
-| public | 0.867 (52/60) |
+| finance | 0.850 (51/60) |
+| it | 0.867 (52/60) |
+| manufacturing | 0.867 (52/60) |
+| public | 0.883 (53/60) |
 | retail | 0.883 (53/60) |
 
 ## Type Scores
 
 | type | score |
 |---|---|
-| paragraph | 0.937 (133/142) |
-| table | 0.817 (67/82) |
-| image | 0.737 (56/76) |
+| paragraph | 0.923 (131/142) |
+| table | 0.866 (71/82) |
+| image | 0.776 (59/76) |
 
 ## Reproduction Notes
 
 - `answers.csv` and `judged.csv` are the primary run outputs.
-- The evaluation target is the Hugging Face dataset release `rag_evaluation_master.csv`, placed at the GitHub repo root when rerunning.
-- `vlm_cache/` is not distributed in this public package; `vlm_cache_files` records the source run cache count.
-- `vlm_imgcache/` is not distributed in this public package; `vlm_imgcache_files` records the source run cache count.
+- The local run used a copied `rag_evaluation_master.csv`; the public artifact omits it and pins the source dataset commit in the repository README.
+- The local run generated `vlm_cache/` and `vlm_imgcache/`; the public artifact omits both cache directories.

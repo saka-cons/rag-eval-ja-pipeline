@@ -27,6 +27,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+if [[ -x "${REPO}/.venv/bin/python3" ]]; then
+  export PATH="${REPO}/.venv/bin:${PATH}"
+elif [[ -x "${REPO}/.venv/bin/python" ]]; then
+  export PATH="${REPO}/.venv/bin:${PATH}"
+fi
+
 RUN="${1:-}"
 STEP="${2:-}"
 if [[ -z "${RUN}" || "${RUN}" == "--help" || "${RUN}" == "-h" ]]; then
@@ -50,31 +56,39 @@ done
 case "${RUN}" in
   r1)
     MODE="novlm"
-    DATASET="RAG-Eval-JA-master-novlm"
+    DATASET="${DIFY_DATASET_NOVLM_NAME:-RAG-Eval-JA-master-novlm}"
     GEN_MODEL="openai/gpt-oss-20b"
     JUDGE_MODEL="qwen/qwen3.6-35b-a3b"
     LABEL="r1: no-VLM + gpt-oss-20b"
+    RUN_APP_API_KEY="${DIFY_APP_API_KEY_R1:-${DIFY_APP_API_KEY:-}}"
+    DIFY_MANIFEST="${DIFY_MANIFEST_R1:-}"
     ;;
   r2)
     MODE="vlm"
-    DATASET="RAG-Eval-JA-master-vlm"
+    DATASET="${DIFY_DATASET_VLM_NAME:-RAG-Eval-JA-master-vlm}"
     GEN_MODEL="openai/gpt-oss-20b"
     JUDGE_MODEL="qwen/qwen3.6-35b-a3b"
     LABEL="r2: VLM + gpt-oss-20b"
+    RUN_APP_API_KEY="${DIFY_APP_API_KEY_R2:-${DIFY_APP_API_KEY:-}}"
+    DIFY_MANIFEST="${DIFY_MANIFEST_R2:-}"
     ;;
   r3)
     MODE="novlm"
-    DATASET="RAG-Eval-JA-master-novlm"
+    DATASET="${DIFY_DATASET_NOVLM_NAME:-RAG-Eval-JA-master-novlm}"
     GEN_MODEL="qwen/qwen3.6-35b-a3b"
     JUDGE_MODEL="qwen/qwen3.6-35b-a3b"
     LABEL="r3: no-VLM + qwen3.6-35b-a3b"
+    RUN_APP_API_KEY="${DIFY_APP_API_KEY_R3:-${DIFY_APP_API_KEY:-}}"
+    DIFY_MANIFEST="${DIFY_MANIFEST_R3:-}"
     ;;
   r4)
     MODE="vlm"
-    DATASET="RAG-Eval-JA-master-vlm"
+    DATASET="${DIFY_DATASET_VLM_NAME:-RAG-Eval-JA-master-vlm}"
     GEN_MODEL="qwen/qwen3.6-35b-a3b"
     JUDGE_MODEL="qwen/qwen3.6-35b-a3b"
     LABEL="r4: VLM + qwen3.6-35b-a3b"
+    RUN_APP_API_KEY="${DIFY_APP_API_KEY_R4:-${DIFY_APP_API_KEY:-}}"
+    DIFY_MANIFEST="${DIFY_MANIFEST_R4:-}"
     ;;
   *)
     echo "ERROR: run must be one of: r1, r2, r3, r4" >&2
@@ -100,6 +114,18 @@ ANSWERS_REL="${RUN}/answers.csv"
 JUDGED_REL="${RUN}/judged.csv"
 REPORT="${RUN_DIR}/report.md"
 
+archive_run_dir() {
+  if [[ ! -e "${RUN_DIR}" ]]; then
+    return
+  fi
+  local archive_base="${RUN_SNAPSHOT_DIR:-${REPO}/results/_archived_fresh}"
+  local stamp
+  stamp="$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "${archive_base}/preexisting_results"
+  mv "${RUN_DIR}" "${archive_base}/preexisting_results/${RUN}-${stamp}"
+  echo "既存の ${RUN_DIR} は ${archive_base}/preexisting_results/${RUN}-${stamp} に退避しました。"
+}
+
 banner() {
   echo
   echo "======================================================================"
@@ -113,15 +139,15 @@ banner() {
 }
 
 run_generate() {
-  if [[ -z "${DIFY_APP_API_KEY:-}" ]]; then
-    echo "ERROR: DIFY_APP_API_KEY is required for generate" >&2
+  if [[ -z "${RUN_APP_API_KEY:-}" ]]; then
+    echo "ERROR: per-run DIFY_APP_API_KEY for ${RUN} or DIFY_APP_API_KEY is required for generate" >&2
     exit 1
   fi
   if [[ "${FRESH}" -eq 1 ]]; then
-    rm -rf "${RUN_DIR}"
+    archive_run_dir
   fi
   mkdir -p "${RUN_DIR}"
-  python3 "${REPO}/scripts/02_generate_answers.py" --out "${ANSWERS_REL}"
+  DIFY_APP_API_KEY="${RUN_APP_API_KEY}" python3 "${REPO}/scripts/02_generate_answers.py" --out "${ANSWERS_REL}"
 }
 
 run_judge() {
@@ -145,11 +171,18 @@ run_report() {
 }
 
 run_finalize() {
-  python3 "${REPO}/scripts/finalize_run_artifacts.py" "${RUN}" \
+  local finalize_cmd=(python3 "${REPO}/scripts/finalize_run_artifacts.py" "${RUN}" \
     --mode "${MODE}" \
     --dataset-name "${DATASET}" \
     --generation-model "${GEN_MODEL}" \
-    --judge-model "${JUDGE_MODEL}"
+    --judge-model "${JUDGE_MODEL}")
+  if [[ -n "${RUN_SNAPSHOT_DIR:-}" ]]; then
+    finalize_cmd+=(--snapshot-dir "${RUN_SNAPSHOT_DIR}")
+  fi
+  if [[ -n "${DIFY_MANIFEST:-}" ]]; then
+    finalize_cmd+=(--dify-manifest "${DIFY_MANIFEST}")
+  fi
+  "${finalize_cmd[@]}"
 }
 
 banner

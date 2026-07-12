@@ -64,7 +64,7 @@ def fetch_docs(ds_id: str) -> dict:
         page += 1
 
 
-def reupload(ds_id: str, name: str, pdf_path: Path, rec: dict):
+def reupload(ds_id: str, name: str, pdf_path: Path, rec: dict, no_vlm: bool):
     """error/missing の文書を削除→同名で再投入する。Markdown は cache 再利用(VLM 再実行なし)。"""
     if rec and rec.get("id"):
         try:
@@ -73,7 +73,7 @@ def reupload(ds_id: str, name: str, pdf_path: Path, rec: dict):
         except Exception as e:
             print(f"    削除失敗(無視して再投入を試みる): {name}: {e}")
     try:
-        md = up.get_markdown(pdf_path, page_images=False, use_cache=True)
+        md = up.get_markdown(pdf_path, page_images=False, use_cache=True, no_vlm=no_vlm)
         up.push_to_dify(ds_id, name, md)
         print(f"    再投入: {name}")
     except Exception as e:
@@ -86,6 +86,7 @@ def main():
     ap.add_argument("--interval", type=int, default=10, help="ポーリング間隔(秒)")
     ap.add_argument("--timeout", type=int, default=3600, help="全体タイムアウト(秒)")
     ap.add_argument("--max-retry", type=int, default=2, help="文書ごとの再投入の上限回数")
+    ap.add_argument("--no-vlm", action="store_true", help="error/missing再投入でもno-VLM Markdownを使う")
     args = ap.parse_args()
 
     if not up.API_KEY:
@@ -118,7 +119,7 @@ def main():
         # リトライ予算が残る error/missing を再投入(削除→再投入)
         retriable = [n for n in bad if retries.get(n, 0) < args.max_retry]
         for n in retriable:
-            reupload(ds_id, n, expected[n], docs.get(n))
+            reupload(ds_id, n, expected[n], docs.get(n), args.no_vlm)
             retries[n] = retries.get(n, 0) + 1
 
         # 復旧手段が尽きた(リトライ上限超過)かつ処理中も無ければ失敗確定
